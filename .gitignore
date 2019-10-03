@@ -90,6 +90,7 @@ venv/
 ENV/
 
 # Spyder project settings
+.spyproject
 .spyderproject
 
 # Rope project settings
