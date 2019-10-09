@@ -1,9 +1,22 @@
 from .base import Base
 
 
+class User:
+    def __init__(self, id, username, email, password=None, **kwargs):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.password = password
+        self.__dict__.update(kwargs)
+
+
 class Users(Base):
     endpoint = '/users'
-
+    
+    @property
+    def me(self):
+        return self.get_user(self.client.userid)
+    
     def login_user(self, options):
         return self.client.make_request('post', self.endpoint + '/login', options)
 
@@ -14,22 +27,23 @@ class Users(Base):
         return self.client.post(self.endpoint, options=options, params=params)
 
     def get_users(self, page=0, per_page=1<<10):
-        return self.client.get(
+        response = self.client.get(
                 self.endpoint,
                 params={"page": page,
                         "per_page": per_page})
+        return [User(**attrs) for attrs in response]
 
     def get_users_by_ids(self, *user_ids):
-        return self.client.post(
+        response = self.client.post(
             self.endpoint + '/ids',
-            options=user_ids
-        )
+            options=user_ids)
+        return [User(**attrs) for attrs in response]
 
     def get_users_by_usernames(self, *usernames):
-        return self.client.post(
+        response = self.client.post(
             self.endpoint + '/usernames',
-            options=usernames
-        )
+            options=usernames)
+        return [User(**attrs) for attrs in response]
 
     def search_users(self, *group_channel_ids):
         return self.client.post(
@@ -44,9 +58,7 @@ class Users(Base):
         )
 
     def get_user(self, user_id):
-        return self.client.get(
-            self.endpoint + '/' + user_id
-        )
+        return User(**self.client.get(self.endpoint + '/' + user_id))
 
     def update_user(self, user_id, options=None):
         return self.client.put(
@@ -89,9 +101,7 @@ class Users(Base):
         )
 
     def get_user_by_username(self, username):
-        return self.client.get(
-            self.endpoint + '/username/' + username
-        )
+        return User(**self.client.get(self.endpoint + '/username/' + username))
 
     def reset_password(self, options=None):
         return self.client.post(
@@ -129,9 +139,7 @@ class Users(Base):
         )
 
     def get_user_by_email(self, email):
-        return self.client.get(
-            self.endpoint + '/email/' + email
-        )
+        return User(**self.client.get(self.endpoint + '/email/' + email))
 
     def get_user_sessions(self, user_id):
         return self.client.get(
@@ -214,6 +222,5 @@ class Users(Base):
         )
 
     def get_stats(self):
-        return self.client.get(
-            self.endpoint + '/stats'
-        )
+        """Get a total count of users in the system"""
+        return self.client.get(self.endpoint + '/stats')

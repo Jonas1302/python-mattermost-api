@@ -7,20 +7,33 @@ log = logging.getLogger('mattermostdriver.api.channels')
 log.setLevel(logging.INFO)
 
 
+class Channel:
+    def __init__(self, id, name, display_name, **kwargs):
+        """`name`: unique name; `display_name`: non-unique channel name"""
+        self.id = id
+        self.name = name
+        self.display_name = display_name
+        self.__dict__.update(kwargs)
+
+
 class Channels(Base):
     endpoint = '/channels'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.users = Users(self.client)
 
     def create_channel(self, team_id, name, deisplay_name, type_, purpose=None, header=None):
         """'O' for a public channel, 'P' for a private channel"""
-        return self.client.post(
+        return Channel(**self.client.post(
             self.endpoint,
             {"team_id": team_id,
              "name": name,
-             "display_name": deisplay_name,
+			 "display_name": deisplay_name,
              "purpose": purpose,
              "header": header,
              "type": type_}
-        )
+        ))
     
     def create_public_channel(self, team_id, name, deisplay_name, purpose=None, header=None):
         return self.create_channel(team_id, name, deisplay_name, "O", purpose=None, header=None)
@@ -29,27 +42,26 @@ class Channels(Base):
         return self.create_channel(team_id, name, deisplay_name, "P", purpose=None, header=None)
 
     def create_direct_message_channel(self, current_user_id, other_user_id):
-        return self.client.post(
+        return Channel(**self.client.post(
             self.endpoint + '/direct',
             [current_user_id, other_user_id]
-        )
+        ))
 
     def create_group_message_channel(self, *user_ids):
-        return self.client.post(
+        return Channel(**self.client.post(
             self.endpoint + '/group',
             user_ids
-        )
+        ))
 
     def get_list_of_channels_by_ids(self, team_id, *channel_ids):
-        return self.client.post(
+        response = self.client.post(
             Teams.endpoint + '/' + team_id + '/channels/ids',
             channel_ids
         )
+        return [Channel(**attrs) for attrs in response]
 
     def get_channel(self, channel_id):
-        return self.client.get(
-            self.endpoint + '/' + channel_id
-        )
+        return Channel(**self.client.get(self.endpoint + '/' + channel_id))
 
     def update_channel(self, channel_id, options):
         return self.client.put(
@@ -83,27 +95,22 @@ class Channels(Base):
             self.endpoint + '/' + channel_id + '/pinned'
         )
 
-    def get_channel_by_name(self, team_id, channel_name, include_deleted=False):
+    def get_channel_by_name(self, team, channel_name, include_deleted=False):
         """Gets channel from the provided team id and channel name strings."""
-        return self.client.get(
-            Teams.endpoint + '/' + team_id + '/channels/name/' + channel_name,
+        return Channel(**self.client.get(
+            Teams.endpoint + '/' + team.id + '/channels/name/' + channel_name,
             params={"include_deleted": include_deleted}
-        )
+        ))
 
-    def get_channel_by_name_and_team_name(self, team_name, channel_name, include_deleted=False):
-        """Gets a channel from the provided team name and channel name strings."""
-        return self.client.get(
-            Teams.endpoint + '/name/' + team_name + '/channels/name/' + channel_name,
-            params={"include_deleted": include_deleted}
-        )
-
-    def get_channel_members(self, channel_id, page=0, per_page=1<<10):
+    def get_channel_members(self, channel, page=0, per_page=1<<10):
         """Get a page of members for a channel."""
-        return self.client.get(
-            self.endpoint + '/' + channel_id + '/members',
+        response = self.client.get(
+            self.endpoint + '/' + channel.id + '/members',
             params={"page": page,
                     "per_page": per_page}
         )
+        return self.users.get_users_by_ids(*[attrs["user_id"] for attrs in response])
+        
 
     def add_user(self, channel_id, user_id, post_root_id=None):
         """Add a user to a channel by creating a channel member object."""
@@ -163,33 +170,26 @@ class Channels(Base):
             Users.endpoint + '/' + user_id + '/teams/' + team_id + '/channels'
         )
 
-    def get_channel_for_user(self, user_id, team_id):
-        """Get the total unread messages and mentions for a channel for a user."""
-        log.warning(
-            'Call to deprecated function get_channel_for_user, '
-            'which will be removed in the next major version.'
-            'Use get_channels_for_user instead.'
-        )
-        return self.get_channels_for_user(user_id, team_id)
-
     def get_unread_messages(self, user_id, channel_id):
         return self.client.get(
             Users.endpoint + '/' + user_id + '/channels/' + channel_id + '/unread'
         )
 
-    def get_public_channels(self, team_id, page=0, per_page=1<<10):
-        return self.client.get(
-            '/teams/' + team_id + '/channels',
+    def get_public_channels(self, team, page=0, per_page=1<<10):
+        response = self.client.get(
+            '/teams/' + team.id + '/channels',
             params={"page": page,
                     "per_page": per_page}
         )
+        return [Channel(**attrs) for attrs in response]
 
-    def get_deleted_channels(self, team_id, age=0, per_page=1<<10):
-        return self.client.get(
-            '/teams/' + team_id + '/channels/deleted',
+    def get_deleted_channels(self, team, page=0, per_page=1<<10):
+        response = self.client.get(
+            '/teams/' + team.id + '/channels/deleted',
             params={"page": page,
                     "per_page": per_page}
         )
+        return [Channel(**attrs) for attrs in response]
 
     def search_channels(self, team_id, options=None):
         return self.client.post(

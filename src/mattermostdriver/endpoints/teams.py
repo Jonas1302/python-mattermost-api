@@ -1,31 +1,40 @@
-import warnings
-
 from .base import Base
-from .users import Users
+from .users import User, Users
+
+
+class Team:
+    def __init__(self, id, name, description, type, **kwargs):
+        """`type`: 'O' for open, 'I' for invite only"""
+        self.id = id
+        self.name = name
+        self.description = description
+        self.type = type
+        self.__dict__.update(kwargs)
 
 
 class Teams(Base):
     endpoint = '/teams'
 
     def create_team(self, name, display_name, type_):
-        """`type`: 'O' for open, 'I' for invite only"""
-        return self.client.post(
+        return Team(**self.client.post(
             self.endpoint,
             {"name": name,
              "display_name": display_name,
              "type": type_}
-        )
+        ))
 
-    def get_teams(self, params=None):
-        return self.client.get(
+    def get_teams(self, page=0, per_page=1024, include_total_count=False):
+        response = self.client.get(
             self.endpoint,
-            params=params
+            params={"page": page,
+                    "per_page": per_page,
+                    "include_total_count": include_total_count}
         )
+        return [Team(**attrs) for attrs in response]
+        
 
     def get_team(self, team_id):
-        return self.client.get(
-            self.endpoint + '/' + team_id,
-        )
+        return Team(**self.client.get(self.endpoint + '/' + team_id))
 
     def update_team(self, team_id, options=None):
         return self.client.put(
@@ -46,9 +55,7 @@ class Teams(Base):
         )
 
     def get_team_by_name(self, name):
-        return self.client.get(
-            self.endpoint + '/name/' + name
-        )
+        return Team(**self.client.get(self.endpoint + '/name/' + name))
 
     def search_teams(self, options=None):
         return self.client.post(
@@ -57,20 +64,17 @@ class Teams(Base):
         )
 
     def check_team_exists(self, name):
-        return self.client.get(
-            self.endpoint + '/name/' + name + '/exists'
-        )
+        return self.client.get(self.endpoint + '/name/' + name + '/exists')
 
     def get_user_teams(self, user_id):
-        return self.client.get(
-            Users.endpoint + '/' + user_id + '/teams'
-        )
+        return self.client.get(Users.endpoint + '/' + user_id + '/teams')
 
-    def get_team_members(self, team_id, params=None):
-        return self.client.get(
-            self.endpoint + '/' + team_id + '/members',
-            params=params
-        )
+    def get_team_members(self, team, page=0, per_page=1<<10):
+        response = self.client.get(
+            self.endpoint + '/' + team.id + '/members',
+            params={"page": page,
+                    "per_page": per_page})
+        return [User(**attrs) for attrs in response]
 
     def add_user_to_team(self, team_id, options=None):
         return self.client.post(
@@ -148,38 +152,6 @@ class Teams(Base):
     def get_invite_info_for_team(self, invite_id):
         return self.client.get(
             self.endpoint + '/invite/' + invite_id,
-        )
-
-    def get_public_channels(self, team_id, params=None):
-        warnings.warn(
-            'Using deprecated endpoint Teams.get_public_channels(). ' +
-            'Use Channels.get_public_channels() instead.',
-            DeprecationWarning
-        )
-        return self.client.get(
-            self.endpoint + '/' + team_id + '/channels',
-            params=params
-        )
-
-    def get_deleted_channels(self, team_id, params=None):
-        warnings.warn(
-            'Using deprecated endpoint Teams.get_deleted_channels(). ' +
-            'Use Channels.get_deleted_channels() instead.',
-            DeprecationWarning
-        )
-        return self.client.get(
-            self.endpoint + '/' + team_id + '/channels/deleted',
-            params=params
-        )
-
-    def search_channels(self, team_id, options=None):
-        warnings.warn(
-            'Using deprecated endpoint Teams.search_channels(). Use Channels.search_channels() instead.',
-            DeprecationWarning
-        )
-        return self.client.post(
-            self.endpoint + '/' + team_id + '/channels/search',
-            options=options
         )
 
     def get_team_icon(self, team_id):
