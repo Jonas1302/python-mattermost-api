@@ -7,16 +7,23 @@ from .channels import Channels
 class Posts(Base):
 	endpoint = '/posts'
 
-	def create_post(self, options):
+	def create_post(self, channel_id, message, root_id=None, file_ids=None, props=None):
+		"""Create a new post in a channel. To create the post as a comment on another post, provide `root_id`."""
 		return self.client.post(
 			self.endpoint,
-			options=options
+			options={"channel_id": channel_id,
+					 "message": message,
+					 "root_id": root_id,
+					 "file_ids": file_ids,
+					 "props": props}
 		)
 
-	def create_ephemeral_post(self, options):
+	def create_ephemeral_post(self, user_id, channel_id, message):
+		"""Create a new ephemeral post in a channel. (currently only given to system admin)"""
 		return self.client.post(
 			self.endpoint + '/ephemeral',
-			options=options
+			options={"user_id": user_id,
+					 "post": {"channel_id": channel_id, "message": message}}
 		)
 
 	def get_post(self, post_id):
@@ -29,16 +36,25 @@ class Posts(Base):
 			self.endpoint + '/' + post_id,
 		)
 
-	def update_post(self, post_id, options=None):
+	def update_post(self, post_id, is_pinned=None, message=None, has_reactions=True, props=None):
+        """`patch_post` SEEMS to be preferred as it leaves the `is_pinned` status when `None`"""
 		return self.client.put(
 			self.endpoint + '/' + post_id,
-			options=options
+			options={"id": post_id,
+					 "is_pinned": is_pinned,
+					 "message": message,
+					 "has_reactions": has_reactions,
+					 "props": props}
 		)
 
-	def patch_post(self, post_id, options=None):
+	def patch_post(self, post_id, is_pinned=None, message=None, has_reactions=True, props=None):
 		return self.client.put(
 			self.endpoint + '/' + post_id + '/patch',
-			options=options
+			options={"id": post_id,
+					 "is_pinned": is_pinned,
+					 "message": message,
+					 "has_reactions": has_reactions,
+					 "props": props}
 		)
 
 	def get_thread(self, post_id):

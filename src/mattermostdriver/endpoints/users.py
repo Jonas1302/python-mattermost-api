@@ -13,25 +13,28 @@ class Users(Base):
 	def create_user(self, options=None, params=None):
 		return self.client.post(self.endpoint, options=options, params=params)
 
-	def get_users(self, params=None):
-		return self.client.get(self.endpoint, params=params)
+	def get_users(self, page=0, per_page=1<<10):
+		return self.client.get(
+				self.endpoint,
+				params={"page": page,
+						"per_page": per_page})
 
-	def get_users_by_ids(self, options=None):
+	def get_users_by_ids(self, *user_ids):
 		return self.client.post(
 			self.endpoint + '/ids',
-			options
+			options=user_ids
 		)
 
-	def get_users_by_usernames(self, options=None):
+	def get_users_by_usernames(self, *usernames):
 		return self.client.post(
 			self.endpoint + '/usernames',
-			options
+			options=usernames
 		)
 
-	def search_users(self, options=None):
+	def search_users(self, *group_channel_ids):
 		return self.client.post(
 			self.endpoint + '/search',
-			options
+			options=group_channel_ids
 		)
 
 	def autocomplete_users(self, params=None):

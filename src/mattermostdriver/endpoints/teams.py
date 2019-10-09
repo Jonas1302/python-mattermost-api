@@ -7,10 +7,13 @@ from .users import Users
 class Teams(Base):
 	endpoint = '/teams'
 
-	def create_team(self, options=None):
+	def create_team(self, name, display_name, type_):
+		"""`type`: 'O' for open, 'I' for invite only"""
 		return self.client.post(
 			self.endpoint,
-			options
+			{"name": name,
+			 "display_name": display_name,
+			 "type": type_}
 		)
 
 	def get_teams(self, params=None):
