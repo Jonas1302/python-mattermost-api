@@ -14,6 +14,9 @@ class Channel:
         self.name = name
         self.display_name = display_name
         self.__dict__.update(kwargs)
+    
+    def __repr__(self):
+        return f"Channel {self.name}"
 
 
 class Channels(Base):

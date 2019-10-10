@@ -4,10 +4,13 @@ from .base import Base
 class User:
     def __init__(self, id, username, email, password=None, **kwargs):
         self.id = id
-        self.username = username
+        self.name = username
         self.email = email
         self.password = password
         self.__dict__.update(kwargs)
+    
+    def __repr__(self):
+        return f"User {self.name}"
 
 
 class Users(Base):

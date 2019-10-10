@@ -10,6 +10,9 @@ class Team:
         self.description = description
         self.type = type
         self.__dict__.update(kwargs)
+    
+    def __repr__(self):
+        return f"Team {self.name}"
 
 
 class Teams(Base):

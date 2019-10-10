@@ -20,6 +20,9 @@ class Post:
         if "original" in kwargs:
             self.original_id = kwargs["original"].id
     
+    def __repr__(self):
+        return f"Post from {self.user.name}: {self.message[:20]}..."
+    
     @property
     def user(self):
         return self.endpoint.users.get_user(self.user_id)
